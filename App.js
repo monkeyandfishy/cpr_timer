@@ -8,9 +8,10 @@ import { Audio } from "expo-av";
 
 export default function App() {
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
   const [rhythmTime, setRhythmTime] = useState(0);
-  const [isRhythmRunning, setIsRhythmRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(false); // Controls the "Time Elapsed" timer
+  const [isRhythmRunning, setIsRhythmRunning] = useState(false); // Controls the "Rhythm Check" timer
+  const [currentState, setCurrentState] = useState("idle"); // "idle", "running", "paused", "ended"
   const [timeline, setTimeline] = useState([]);
   const [cycles, setCycles] = useState(0);
   const [epinephrineCount, setEpinephrineCount] = useState(0);
@@ -91,7 +92,9 @@ export default function App() {
 
   // Timer Handlers
   const handleStart = () => {
-    setIsRunning(true);
+    setTimeElapsed(0); // Reset the "Time Elapsed" timer
+    setIsRunning(true); // Start "Time Elapsed" timer
+    setCurrentState("running");
     addEventToTimeline("Code timer started");
     Alert.alert(
       "Reminder",
@@ -100,27 +103,45 @@ export default function App() {
   };
 
   const handlePause = () => {
-    setIsRunning(false);
+    setIsRunning(false); // Pause "Time Elapsed" timer
+    setIsRhythmRunning(false); // Pause "Rhythm Check" timer
+    setCurrentState("paused");
     addEventToTimeline("Code timer paused");
   };
 
+  const handleResume = () => {
+    if (currentState === "paused") {
+      setIsRunning(true); // Resume "Time Elapsed" timer
+      setIsRhythmRunning(true); // Resume "Rhythm Check" timer (if previously running)
+      setCurrentState("running");
+    }
+  };
+
   const handleEnd = () => {
-    setIsRunning(false);
-    setIsRhythmRunning(false);
+    setIsRunning(false); // Stop "Time Elapsed" timer
+    setIsRhythmRunning(false); // Stop "Rhythm Check" timer
+    setCurrentState("idle");
     const summary = `Summary:\nCycles: ${cycles}\nEpinephrine: ${epinephrineCount}\nShocks: ${shockCount}`;
     addEventToTimeline("Code timer ended");
     Alert.alert("Timer Ended", summary);
-  };
-
+      // Reset Timers and Summary
+      setTimeElapsed(0); // Reset "Time Elapsed"
+      setRhythmTime(0); // Reset "Rhythm Check"
+      setCycles(0); // Reset CPR count
+      setShockCount(0); // Reset Shock count
+      setEpinephrineCount(0); // Reset Epinephrine count
+    };
+  
   // CPR, Epinephrine, and Shock Handlers
   const handleCPR = () => {
-    setIsRhythmRunning(true);
-    setCycles((prev) => prev + 1);
+    setRhythmTime(0); // Reset "Rhythm Check" timer
+    setIsRhythmRunning(true); // Start "Rhythm Check" timer
+    setCycles((prev) => prev + 1); // Increment CPR count
     addEventToTimeline("Chest compressions started");
   };
 
   const handleEpinephrine = () => {
-    setEpinephrineCount((prev) => prev + 1);
+    setEpinephrineCount((prev) => prev + 1); // Increment Epinephrine count
     addEventToTimeline("Epinephrine given");
     setTimeout(() => {
       Alert.alert(
@@ -132,7 +153,7 @@ export default function App() {
   };
 
   const handleShock = () => {
-    setShockCount((prev) => prev + 1);
+    setShockCount((prev) => prev + 1); // Increment Shock count
     addEventToTimeline("Shock delivered");
   };
 
@@ -146,23 +167,37 @@ export default function App() {
   // Timers - Update every second
   useEffect(() => {
     let interval = null;
-    if (isRunning)
-if (isRunning) {
-  interval = setInterval(() => {
-    setTimeElapsed((prev) => prev + 1);
-    if (isRhythmRunning) {
-      setRhythmTime((prev) => prev + 1);
-      if (rhythmTime >= 120) {
-        rhythmCheckAlert();
-        setRhythmTime(0);
-      }
+
+    // "Time Elapsed" Timer
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTimeElapsed((prev) => prev + 1);
+      }, 1000);
     }
-  }, 1000);
-} else {
-  clearInterval(interval);
-}
-return () => clearInterval(interval);
-}, [isRunning, isRhythmRunning, rhythmTime]);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  useEffect(() => {
+    let rhythmInterval = null;
+
+    // "Rhythm Check" Timer
+    if (isRhythmRunning) {
+      rhythmInterval = setInterval(() => {
+        setRhythmTime((prev) => {
+          if (prev >= 120) {
+            clearInterval(rhythmInterval);
+            setIsRhythmRunning(false);
+            Alert.alert("Rhythm Check", "Check the rhythm and restart CPR.");
+            return prev
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    }
+  
+    return () => clearInterval(rhythmInterval);
+  }, [isRhythmRunning]);
 
 return (
 <View style={styles.container}>
@@ -170,7 +205,7 @@ return (
   <View style={styles.header}>
   <View style={styles.headerLeft}>
     <Image
-      source={require("./assets/logo.png")} // Replace with your logo file
+      source={require("./assets/logo.png")} 
       style={styles.logoImage} // Add a style for your logo
     />
     <Text style={styles.headerText}>Code Timer</Text>
@@ -238,9 +273,26 @@ return (
 
   {/* Buttons */}
   <View style={styles.buttonRow}>
-    <Button title="Start" onPress={handleStart} />
-    <Button title="Pause" onPress={handlePause} />
-    <Button title="End" onPress={handleEnd} />
+        <Button
+          title="Start"
+          onPress={handleStart}
+          disabled={currentState !== "idle"} // Only enabled when "idle"
+        />
+        <Button
+          title="Pause"
+          onPress={handlePause}
+          disabled={currentState !== "running"} // Only enabled when "running"
+        />
+        <Button
+          title="Resume"
+          onPress={handleResume}
+          disabled={currentState !== "paused"} // Only enabled when "paused"
+        />
+        <Button
+          title="End"
+          onPress={handleEnd}
+          disabled={currentState === "idle"} // Disabled when "idle"
+        />
   </View>
   <View style={styles.buttonRow}>
     <Button title="CPR" onPress={handleCPR} />
@@ -281,7 +333,7 @@ headerIcons: { flexDirection: "row", marginTop: 25 },
 timerLabel: { fontSize: 18, textAlign: "center", marginTop: 10 },
 timer: { fontSize: 36, textAlign: "center", fontWeight: "bold" },
 rhythmTimer: { fontSize: 108, textAlign: "center", fontWeight: "bold", color: "red" },
-buttonRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 10 },
+buttonRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 10, color: "#008080" },
 timelineContainer: { marginTop: 20 },
 timelineHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
 timelineTitle: { fontSize: 18, fontWeight: "bold" },
