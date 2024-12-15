@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "react-native"; 
 import { Audio } from "expo-av";
 
-
 export default function App() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [rhythmTime, setRhythmTime] = useState(0);
@@ -273,54 +272,94 @@ return (
 
   {/* Buttons */}
   <View style={styles.buttonRow}>
-        <Button
-          title="Start"
+        <TouchableOpacity
           onPress={handleStart}
           disabled={currentState !== "idle"} // Only enabled when "idle"
-        />
-        <Button
-          title="Pause"
+          style={[
+            styles.button,
+            currentState !== "idle" && styles.disabledButton, // Apply disabled styling
+          ]}
+        >
+          <Text style={styles.buttonText}>Start</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handlePause}
           disabled={currentState !== "running"} // Only enabled when "running"
-        />
-        <Button
-          title="Resume"
+          style={[
+            styles.button,
+            currentState !== "running" && styles.disabledButton,
+          ]}
+        >
+          <Text style={styles.buttonText}>Pause</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleResume}
           disabled={currentState !== "paused"} // Only enabled when "paused"
-        />
-        <Button
-          title="End"
+          style={[
+            styles.button,
+            currentState !== "paused" && styles.disabledButton,
+          ]}
+        >
+          <Text style={styles.buttonText}>Resume</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleEnd}
           disabled={currentState === "idle"} // Disabled when "idle"
-        />
-  </View>
-  <View style={styles.buttonRow}>
-    <Button title="CPR" onPress={handleCPR} />
-    <Button title="Epinephrine" onPress={handleEpinephrine} />
-    <Button title="Shock" onPress={handleShock} />
-  </View>
+          style={[
+            styles.button,
+            currentState === "idle" && styles.disabledButton,
+          ]}
+        >
+          <Text style={styles.buttonText}>End</Text>
+        </TouchableOpacity>
+      </View>
 
-  {/* Timeline */}
-  <View style={styles.timelineContainer}>
-    <View style={styles.timelineHeader}>
-      <Text style={styles.timelineTitle}>Timeline</Text>
-      <TouchableOpacity onPress={clearTimeline}>
-        <Text style={styles.clearButton}>Clear</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          onPress={handleCPR}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>CPR</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleShock}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Shock</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleEpinephrine}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Epinephrine</Text>
+        </TouchableOpacity>
+      </View>
+      {/* Timeline */}
+      <View style={styles.timelineContainer}>
+      <View style={styles.timelineHeader}>
+        <Text style={styles.timelineTitle}>Timeline</Text>
+        <TouchableOpacity onPress={clearTimeline}>
+          <Text style={styles.clearButton}>Clear</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={timeline}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.timelineRow}>
+            <Text style={styles.timelineTime}>{item.actualTime}</Text>
+            <Text style={styles.timelineEvent}>{item.event}</Text>
+          </View>
+        )}
+      />
     </View>
-    <FlatList
-      data={timeline}
-      keyExtractor={(item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <View style={styles.timelineRow}>
-          <Text style={styles.timelineTime}>{item.actualTime}</Text>
-          <Text style={styles.timelineEvent}>{item.event}</Text>
-        </View>
-      )}
-    />
   </View>
-</View>
-);
+  );
 }
 
 const styles = StyleSheet.create({
@@ -333,7 +372,25 @@ headerIcons: { flexDirection: "row", marginTop: 25 },
 timerLabel: { fontSize: 18, textAlign: "center", marginTop: 10 },
 timer: { fontSize: 36, textAlign: "center", fontWeight: "bold" },
 rhythmTimer: { fontSize: 108, textAlign: "center", fontWeight: "bold", color: "red" },
-buttonRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 10, color: "#008080" },
+buttonRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 10 },
+button: {
+  backgroundColor: "#008080", // Teal background
+  paddingVertical: 10,
+  paddingHorizontal: 15,
+  borderRadius: 8,
+  alignItems: "center",
+},
+disabledButton: {
+  backgroundColor: "#B0C4C4", // Light gray for disabled buttons
+},
+buttonText: {
+  color: "#fff", // White text
+  fontSize: 16,
+  fontWeight: "bold",
+},
+buttonPressed: {
+  backgroundColor: "#005F5F", // Darker teal when pressed
+},
 timelineContainer: { marginTop: 20 },
 timelineHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
 timelineTitle: { fontSize: 18, fontWeight: "bold" },
